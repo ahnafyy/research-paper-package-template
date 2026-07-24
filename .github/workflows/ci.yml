@@ -48,7 +48,9 @@ jobs:
       - run: npm ci --prefix packages/javascript
       - run: npm test --prefix packages/javascript
       - run: mkdir -p package-dist/javascript
-      - run: npm pack --prefix packages/javascript --pack-destination "$GITHUB_WORKSPACE/package-dist/javascript"
+      - name: Pack npm distribution
+        working-directory: packages/javascript
+        run: npm pack --pack-destination "$GITHUB_WORKSPACE/package-dist/javascript"
       - uses: actions/upload-artifact@v7
         with:
           name: registry-packages
