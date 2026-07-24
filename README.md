@@ -77,6 +77,12 @@ all executable claims pass, and a human approves every gate. A successful
 GitHub Actions independently checks the evidence pipeline, manuscript, static site,
 browser behavior, accessibility, and Pages deployment.
 
+Before the first Pages deployment in a repository created from this template, open
+**Settings > Pages** and select **GitHub Actions** as the source. This one-time repository
+setting cannot be enabled by the workflow's least-privilege `GITHUB_TOKEN`; after it is
+set, `.github/workflows/pages.yml` handles builds and deployments without an additional
+secret.
+
 ## Guides
 
 - [Research cycle](docs/research-cycle.md)
