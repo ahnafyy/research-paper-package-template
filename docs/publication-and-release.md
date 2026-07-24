@@ -27,11 +27,31 @@ npx --prefix site playwright install chromium
 npm run test:e2e --prefix site
 ```
 
+## Registry packages
+
+The Python distribution in `packages/python/` is the canonical scientific
+implementation. The npm package in `packages/javascript/` implements the same public
+operations and is checked against `artifacts/conformance/`.
+
+```bash
+python -m build packages/python
+npm ci --prefix packages/javascript
+npm test --prefix packages/javascript
+npm run pack:check --prefix packages/javascript
+```
+
+`project.yml` owns the shared release version and both registry names. Run the
+initializer rather than editing package manifests independently. Configure GitHub
+environments named `pypi` and `npm`, then register
+`.github/workflows/publish-packages.yml` as a trusted publisher with each registry.
+The workflow uses OIDC and stores no registry token in the repository.
+
 ## Release gate
 
 `paperkit release --dry-run` always rebuilds evidence before validation. A real release
-also compiles the paper and site, then atomically replaces `dist/` with deterministic
-archives, citation metadata, and SHA-256 checksums. It never approves a gate.
+also compiles the paper and site, builds both registry packages, then atomically
+replaces `dist/` with deterministic archives, citation metadata, and SHA-256
+checksums. It never approves a gate.
 
 Before release, verify that:
 
@@ -40,4 +60,6 @@ Before release, verify that:
 - every claim has accurate scope, status, limitations, and evidence;
 - literature records and bibliography entries are verifiable;
 - the extracted arXiv source compiles in a clean environment;
+- Python and JavaScript package APIs pass the generated conformance vectors;
+- wheel, sdist, and npm tarball contain only intended public files;
 - the repository and site links in `project.yml` resolve to the public project.

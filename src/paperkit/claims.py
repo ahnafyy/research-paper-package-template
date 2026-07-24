@@ -30,6 +30,8 @@ class Claim:
     manuscript_labels: tuple[str, ...]
     site_visible: bool
     limitations: tuple[str, ...]
+    result_key: str | None
+    expected: float | int | str | bool | None
 
 
 @dataclass(frozen=True)
@@ -81,6 +83,12 @@ def load_claims(path: Path) -> list[Claim]:
         evidence = _string_tuple(item.get("evidence", []), f"{claim_id}.evidence")
         labels = _string_tuple(item.get("manuscript_labels", []), f"{claim_id}.manuscript_labels")
         limitations = _string_tuple(item.get("limitations", []), f"{claim_id}.limitations")
+        result_key = item.get("result_key")
+        if result_key is not None and not isinstance(result_key, str):
+            raise ConfigurationError(f"{claim_id}.result_key must be a string")
+        expected = item.get("expected")
+        if expected is not None and not isinstance(expected, float | int | str | bool):
+            raise ConfigurationError(f"{claim_id}.expected must be a scalar")
         claims.append(
             Claim(
                 id=claim_id,
@@ -93,6 +101,8 @@ def load_claims(path: Path) -> list[Claim]:
                 manuscript_labels=labels,
                 site_visible=item.get("site_visible") is True,
                 limitations=limitations,
+                result_key=result_key,
+                expected=expected,
             )
         )
         seen.add(claim_id)

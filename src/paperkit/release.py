@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import gzip
 import hashlib
+import os
 import shutil
 import subprocess
 import tarfile
 import tempfile
 import zipfile
 from pathlib import Path
+from sys import executable
 
 import yaml
 
@@ -25,6 +27,7 @@ REPRODUCIBILITY_PATHS = (
     "research",
     "scripts",
     "src",
+    "packages",
     "tests",
     "artifacts",
 )
@@ -38,10 +41,29 @@ ARXIV_EXCLUDED_SUFFIXES = {
     ".out",
     ".pdf",
 }
+REPRODUCIBILITY_EXCLUDED_PARTS = {
+    ".astro",
+    ".pytest_cache",
+    ".ruff_cache",
+    "__pycache__",
+    "build",
+    "dist",
+    "node_modules",
+}
 
 
 class ReleaseError(RuntimeError):
     """Raised when release validation or packaging fails."""
+
+
+def _run(command: list[str], cwd: Path) -> None:
+    environment = os.environ.copy()
+    environment["SOURCE_DATE_EPOCH"] = "315532800"
+    completed = subprocess.run(command, cwd=cwd, check=False, env=environment)
+    if completed.returncode != 0:
+        raise ReleaseError(
+            f"Command {' '.join(command)} failed with exit code {completed.returncode}."
+        )
 
 
 def _files_under(root: Path, relatives: tuple[str, ...]) -> list[tuple[Path, Path]]:
@@ -53,6 +75,9 @@ def _files_under(root: Path, relatives: tuple[str, ...]) -> list[tuple[Path, Pat
             (candidate, candidate.relative_to(root))
             for candidate in candidates
             if candidate.is_file()
+            and not REPRODUCIBILITY_EXCLUDED_PARTS.intersection(
+                candidate.relative_to(root).parts
+            )
         )
     return sorted(files, key=lambda item: item[1].as_posix())
 
@@ -102,13 +127,14 @@ def _write_citation(path: Path, root: Path) -> None:
         authors.append(rendered)
     citation = {
         "cff-version": "1.2.0",
-        "message": "If you use this research package, please cite it using this metadata.",
+        "message": "If you use this research release, please cite it using this metadata.",
         "title": project["project"]["title"],
-        "type": "article",
+        "type": "software",
+        "version": project["release"]["version"],
         "authors": authors,
         "repository-code": project["links"]["repository"],
         "url": project["links"]["site"],
-        "license": project["licenses"]["content"],
+        "license": project["licenses"]["code"],
     }
     path.write_text(yaml.safe_dump(citation, sort_keys=False), encoding="utf-8")
 
@@ -138,14 +164,24 @@ def release(root: Path, *, dry_run: bool = False) -> Path:
 
     site = root / "site"
     for command in (["npm", "ci"], ["npm", "run", "build"]):
-        completed = subprocess.run(command, cwd=site, check=False)
-        if completed.returncode != 0:
-            raise ReleaseError(
-                f"Site command {' '.join(command)} failed with exit code {completed.returncode}."
-            )
+        _run(command, site)
 
     staging = Path(tempfile.mkdtemp(prefix="paperkit-release-", dir=root))
     try:
+        python_packages = staging / "packages" / "python"
+        javascript_packages = staging / "packages" / "javascript"
+        python_packages.mkdir(parents=True)
+        javascript_packages.mkdir(parents=True)
+        _run(
+            [executable, "-m", "build", "--outdir", str(python_packages)],
+            root / "packages" / "python",
+        )
+        _run(["npm", "ci"], root / "packages" / "javascript")
+        _run(["npm", "test"], root / "packages" / "javascript")
+        _run(
+            ["npm", "pack", "--pack-destination", str(javascript_packages)],
+            root / "packages" / "javascript",
+        )
         shutil.copyfile(pdf, staging / "paper.pdf")
         shutil.copytree(site / "dist", staging / "site")
         _write_arxiv_tar(staging / "arxiv-source.tar.gz", root / "paper")

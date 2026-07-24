@@ -19,6 +19,14 @@ links:
   site: "https://OWNER.github.io/REPOSITORY/"
 research:
   random_seed: 20260723
+release:
+  version: "0.1.0"
+packages:
+  python:
+    distribution: "example-study"
+    import_name: "example_study"
+  javascript:
+    name: "@example/example-study"
 licenses:
   code: "MIT"
   content: "CC-BY-4.0"

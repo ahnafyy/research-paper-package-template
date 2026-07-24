@@ -16,7 +16,7 @@ jobs:
         with:
           python-version: "3.11"
           cache: pip
-      - run: python -m pip install -e '.[dev]'
+      - run: python -m pip install -e '.[dev]' -e packages/python
       - run: python -m ruff check .
       - run: python -m pytest
       - run: paperkit validate
@@ -25,6 +25,34 @@ jobs:
         with:
           name: verified-artifacts
           path: artifacts/
+
+  packages:
+    needs: evidence
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: verified-artifacts
+          path: artifacts/
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+      - run: python -m pip install build
+      - run: python -m build --outdir package-dist/python packages/python
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22.12.0"
+          cache: npm
+          cache-dependency-path: packages/javascript/package-lock.json
+      - run: npm ci --prefix packages/javascript
+      - run: npm test --prefix packages/javascript
+      - run: mkdir -p package-dist/javascript
+      - run: npm pack --prefix packages/javascript --pack-destination "$GITHUB_WORKSPACE/package-dist/javascript"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: registry-packages
+          path: package-dist/
 
   manuscript:
     needs: evidence

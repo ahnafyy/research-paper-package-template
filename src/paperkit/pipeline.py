@@ -4,7 +4,9 @@ import csv
 import hashlib
 import json
 import shutil
+import sys
 import tempfile
+from importlib import import_module
 from pathlib import Path
 from typing import Any
 
@@ -12,7 +14,6 @@ from paperkit import __version__
 from paperkit.claims import evaluate_claims, load_claims
 from paperkit.config import ProjectConfig, load_yaml
 from paperkit.publication import render_claim_table, render_project_metadata
-from study.analysis import run_analysis
 
 
 def _json_bytes(value: Any) -> bytes:
@@ -52,12 +53,41 @@ def _write_result_macros(path: Path, results: dict[str, Any]) -> None:
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
+def _load_analysis(root: Path, import_name: str) -> Any:
+    package_source = str(root / "packages" / "python" / "src")
+    if package_source not in sys.path:
+        sys.path.insert(0, package_source)
+    return import_module(f"{import_name}.analysis")
+
+
+def _conformance_vectors(analysis: Any) -> dict[str, Any]:
+    cases = []
+    for options, choices in ((1, 0), (2, 1), (3, 2), (8, 4), (10, 6)):
+        result = analysis.expected_distinct_choices(options, choices)
+        cases.append(
+            {
+                "input": {"choices": choices, "options": options},
+                "expected": result.as_dict(),
+            }
+        )
+    return {
+        "schema_version": 1,
+        "operation": "expected_distinct_choices",
+        "cases": cases,
+        "errors": [
+            {"input": {"choices": 1, "options": 0}, "type": "ValueError"},
+            {"input": {"choices": -1, "options": 2}, "type": "ValueError"},
+        ],
+    }
+
+
 def build(root: Path, output_dir: Path | None = None) -> Path:
     root = root.resolve()
     destination = (output_dir or root / "artifacts").resolve()
     config = ProjectConfig.from_file(root / "project.yml")
     claims = load_claims(root / "research" / "claims.yml")
-    results = run_analysis(seed=config.random_seed)
+    analysis = _load_analysis(root, config.python_import_name)
+    results = analysis.run_analysis(seed=config.random_seed)
     evaluations = evaluate_claims(results, claims)
 
     destination.parent.mkdir(parents=True, exist_ok=True)
@@ -65,6 +95,10 @@ def build(root: Path, output_dir: Path | None = None) -> Path:
     try:
         _write_json(staging / "results.json", results)
         _write_json(staging / "claim-results.json", {"claims": evaluations})
+        _write_json(
+            staging / "conformance" / "expected-distinct.json",
+            _conformance_vectors(analysis),
+        )
         raw_project = load_yaml(root / "project.yml")
         _write_json(
             staging / "site-data.json",
@@ -75,6 +109,8 @@ def build(root: Path, output_dir: Path | None = None) -> Path:
                 "authors": raw_project["authors"],
                 "links": raw_project["links"],
                 "licenses": raw_project["licenses"],
+                "release": raw_project["release"],
+                "packages": raw_project["packages"],
                 "results": results,
                 "claims": evaluations,
             },
@@ -92,7 +128,15 @@ def build(root: Path, output_dir: Path | None = None) -> Path:
         manifest = {
             "schema_version": 1,
             "generator": {"name": "paperkit", "version": __version__},
-            "project": {"slug": config.slug, "title": config.title},
+            "project": {
+                "slug": config.slug,
+                "title": config.title,
+                "version": config.version,
+                "packages": {
+                    "python": config.python_distribution,
+                    "javascript": config.javascript_package,
+                },
+            },
             "random_seed": config.random_seed,
             "claims": [item["id"] for item in evaluations],
             "all_executable_claims_passed": all(item["passed"] for item in evaluations),

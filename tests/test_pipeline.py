@@ -26,9 +26,12 @@ def test_build_is_deterministic_and_claims_pass(tmp_path: Path) -> None:
     manifest = json.loads((first / "manifest.json").read_text(encoding="utf-8"))
     assert manifest["all_executable_claims_passed"] is True
     assert "results.json" in manifest["files"]
+    assert "conformance/expected-distinct.json" in manifest["files"]
     site_data = json.loads((first / "site-data.json").read_text(encoding="utf-8"))
     assert site_data["results"]["expected_distinct"] == 3.310546875
     assert site_data["claims"][0]["id"] == "EXAMPLE-COMPUTATION-001"
+    assert site_data["packages"]["python"]["distribution"] == "example-study"
+    assert site_data["packages"]["javascript"]["name"] == "@example/example-study"
     metadata = (first / "tables" / "project_metadata.tex").read_text(encoding="utf-8")
     assert "\\newcommand{\\PaperTitle}" in metadata
     claim_table = (first / "tables" / "claim_status.tex").read_text(encoding="utf-8")

@@ -13,6 +13,9 @@ site/dist/
 site/src/generated/*.json
 site/test-results/
 site/playwright-report/
+packages/javascript/*.tgz
+packages/javascript/node_modules/
+packages/python/dist/
 paper/*.aux
 paper/*.bbl
 paper/*.blg

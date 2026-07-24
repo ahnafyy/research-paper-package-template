@@ -2,7 +2,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from paperkit.release import _files_under, _write_arxiv_tar, _write_zip
+import yaml
+
+from paperkit.release import _files_under, _write_arxiv_tar, _write_citation, _write_zip
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_release_archives_are_byte_identical(tmp_path: Path) -> None:
@@ -26,3 +30,13 @@ def test_release_archives_are_byte_identical(tmp_path: Path) -> None:
     _write_zip(first_zip, files)
     _write_zip(second_zip, files)
     assert first_zip.read_bytes() == second_zip.read_bytes()
+
+
+def test_citation_describes_versioned_software_release(tmp_path: Path) -> None:
+    path = tmp_path / "CITATION.cff"
+    _write_citation(path, ROOT)
+    citation = yaml.safe_load(path.read_text(encoding="utf-8"))
+
+    assert citation["type"] == "software"
+    assert citation["version"] == "0.1.0"
+    assert citation["license"] == "MIT"

@@ -20,7 +20,8 @@ record of a decision or result.
    `research/literature.yml` plus `paper/references.bib` only with verified works.
 5. Register intended findings and falsifiers in `research/claims.yml` before the
    main analysis. Use [claim taxonomy](./references/claim-taxonomy.md).
-6. Implement deterministic analysis and executable evaluators under `src/study/`.
+6. Implement the canonical analysis under `packages/python/`, the matching npm API
+   under `packages/javascript/`, and generate shared conformance vectors.
 7. Run `paperkit build`, then delegate an independent falsification review using
    [review protocol](./references/falsification.md).
 8. Draft the manuscript and explainer from generated artifacts, preserving claim status.

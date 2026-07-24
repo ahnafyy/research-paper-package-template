@@ -1,17 +1,24 @@
-# Paper OS Package Template
+# Research Paper and Package Template
 
-An opinionated GitHub template for turning a small computational or theoretical
-question into calibrated claims, reproducible evidence, an arXiv manuscript, and
-an interactive explainer.
+An opinionated GitHub template for turning a computational or theoretical question
+into a checked research release. One repository produces five coordinated outputs:
 
-The repository treats research as a checked build. Scientific values originate in
-`src/study/`; `paperkit build` evaluates registered claims and generates one evidence
-bundle under `artifacts/`; the LaTeX paper and Astro site consume that bundle. Human
-approval is required at scope, novelty, design, evidence, and release gates.
+- an arXiv-ready paper and PDF;
+- a Python distribution for PyPI;
+- a JavaScript package for npm;
+- deterministic evidence and conformance artifacts;
+- an interactive Astro explainer for GitHub Pages.
 
-The checked-in project is intentionally an unpublishable fixture. It demonstrates an
-exact occupancy calculation while `initialized: false`, `TODO` markers, and pending
-gates prove that the release guard is active.
+The Python package under `packages/python/` is the canonical implementation used by
+`paperkit build`. That build evaluates registered claims and generates `artifacts/`,
+including language-neutral conformance vectors. The JavaScript package must pass those
+same vectors. The paper and site consume generated artifacts rather than copying
+headline values or reimplementing the model.
+
+Human approval is required at scope, novelty, design, evidence, and release gates. The
+checked-in occupancy example is intentionally unpublishable: `initialized: false`,
+placeholders, and pending gates demonstrate that release and registry publication are
+blocked until a real project is ready.
 
 ## Start a project
 
@@ -20,23 +27,28 @@ Use this repository as a GitHub template, clone the new repository, then run:
 ```bash
 python3 -m venv .venv
 . .venv/bin/activate
-python -m pip install -e '.[dev]'
+make install
 python scripts/init_project.py
 ```
 
-The initializer records project metadata but does not approve research gates. Replace
-the fixture in `src/study/`, register claims in `research/claims.yml`, and complete the
-research records before requesting human approval.
+The initializer writes canonical paper and package metadata to `project.yml`, updates
+both registry manifests, and renames the Python import package. It never approves a
+research gate.
+
+Replace the fixture API in `packages/python/` and `packages/javascript/`, register
+claims in `research/claims.yml`, and update the generated conformance contract in
+`src/paperkit/pipeline.py` for the public operations your packages share.
 
 ## Build and inspect
 
-Python 3.11 or newer is required. The site requires Node 22.12 or newer.
+Python 3.11 or newer and Node 22.12 or newer are required.
 
 ```bash
 paperkit build
 paperkit validate
 python -m pytest
 python -m ruff check .
+npm test --prefix packages/javascript
 
 npm ci --prefix site
 npm run check --prefix site
@@ -44,44 +56,37 @@ npm run dev --prefix site
 ```
 
 The site is served at `http://localhost:4321`. Its benchmark, results, and claim table
-come from `artifacts/site-data.json`, not from a second implementation in TypeScript.
+come from `artifacts/site-data.json`; it is a publication surface, not a third model
+implementation.
 
-To stage generated manuscript inputs without TeX:
-
-```bash
-paperkit build-paper --stage-only
-```
-
-To compile `dist/paper.pdf`, install a TeX distribution containing `latexmk`, then run
-`paperkit build-paper`.
+To stage generated manuscript inputs without TeX, run
+`paperkit build-paper --stage-only`. To compile `dist/paper.pdf`, install a TeX
+distribution containing `latexmk`, then run `paperkit build-paper`.
 
 ## Release
 
-Use a dry run while developing:
+Use `paperkit release --dry-run` while developing. A release remains blocked until
+metadata is initialized, placeholders are removed, executable claims pass, package
+manifests match `project.yml`, and a human approves every gate.
 
-```bash
-paperkit release --dry-run
-```
+A successful `paperkit release` creates:
 
-A release remains blocked until metadata is initialized, placeholders are removed,
-all executable claims pass, and a human approves every gate. A successful
-`paperkit release` creates:
+- `dist/paper.pdf` and `dist/arxiv-source.tar.gz`;
+- `dist/packages/python/` with a wheel and source distribution;
+- `dist/packages/javascript/` with the npm tarball;
+- `dist/reproducibility.zip`;
+- `dist/site/`;
+- `dist/CITATION.cff` and `dist/SHA256SUMS`.
 
-- `dist/paper.pdf`
-- `dist/arxiv-source.tar.gz`
-- `dist/reproducibility.zip`
-- `dist/site/`
-- `dist/CITATION.cff`
-- `dist/SHA256SUMS`
-
-GitHub Actions independently checks the evidence pipeline, manuscript, static site,
-browser behavior, accessibility, and Pages deployment.
+GitHub Actions independently checks evidence, cross-language conformance, package
+contents, manuscript compilation, browser behavior, accessibility, and Pages. A
+published GitHub release can publish packages through
+`.github/workflows/publish-packages.yml` after the `pypi` and `npm` environments and
+trusted publishers are configured.
 
 Before the first Pages deployment in a repository created from this template, open
-**Settings > Pages** and select **GitHub Actions** as the source. This one-time repository
-setting cannot be enabled by the workflow's least-privilege `GITHUB_TOKEN`; after it is
-set, `.github/workflows/pages.yml` handles builds and deployments without an additional
-secret.
+**Settings > Pages** and select **GitHub Actions** as the source. This one-time setting
+cannot be enabled by the workflow's least-privilege `GITHUB_TOKEN`.
 
 ## Guides
 

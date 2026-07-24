@@ -35,14 +35,14 @@ const { claims } = Astro.props;
             <span class="claim-id">{claim.id}</span>
             <span>{claim.statement}</span>
           </th>
-          <td><span class="status-label">{claim.status}</span></td>
-          <td>
+          <td data-label="Type"><span class="status-label">{claim.status}</span></td>
+          <td data-label="Check">
             <span class:list={["check-label", { "check-label--pass": claim.passed }]}>
               {claim.passed ? "passed" : "review"}
             </span>
             <small>{claim.detail}</small>
           </td>
-          <td>
+          <td data-label="Scope">
             {claim.scope}
             {claim.limitations.length > 0 && <small>{claim.limitations.join(" ")}</small>}
           </td>

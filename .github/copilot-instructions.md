@@ -12,7 +12,9 @@
 
 ## Evidence Architecture
 
-- Scientific values originate in `src/study/` and flow through `paperkit build`.
+- Scientific values originate in `packages/python/` and flow through `paperkit build`.
+- The JavaScript package must pass the Python-generated vectors under
+  `artifacts/conformance/`; never duplicate expected values between implementations.
 - The paper and site consume generated files under `artifacts/`; do not copy
   headline values or reimplement model logic in publication surfaces.
 - Exploratory notebooks cannot be the sole evidence for a released claim.
@@ -21,7 +23,7 @@
 
 ## Build And Test
 
-- Install with `python -m pip install -e '.[dev]'`.
+- Install with `make install`.
 - Run `python -m paperkit.cli build`, `python -m pytest`, and
   `python -m ruff check .` for the current implementation.
 - Run `python -m paperkit.cli validate --release` before packaging public work.

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -74,6 +75,8 @@ def validate_project(root: Path, *, release: bool = False) -> ValidationReport:
         else:
             warnings.append(message)
 
+    _validate_package_metadata(root, config, errors)
+
     if release:
         placeholder_paths = _placeholder_paths(root)
         if placeholder_paths:
@@ -96,6 +99,42 @@ def validate_project(root: Path, *, release: bool = False) -> ValidationReport:
                     errors.append("One or more executable claims failed.")
 
     return ValidationReport(errors=tuple(errors), warnings=tuple(warnings))
+
+
+def _validate_package_metadata(
+    root: Path, config: ProjectConfig, errors: list[str]
+) -> None:
+    python_manifest = root / "packages" / "python" / "pyproject.toml"
+    javascript_manifest = root / "packages" / "javascript" / "package.json"
+    try:
+        python_project = tomllib.loads(python_manifest.read_text(encoding="utf-8"))["project"]
+    except (OSError, KeyError, tomllib.TOMLDecodeError) as error:
+        errors.append(f"Python package manifest is unreadable: {error}")
+    else:
+        if python_project.get("name") != config.python_distribution:
+            errors.append("Python package name does not match project.yml.")
+        if python_project.get("version") != config.version:
+            errors.append("Python package version does not match project.yml.")
+    try:
+        javascript_project = json.loads(javascript_manifest.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        errors.append(f"JavaScript package manifest is unreadable: {error}")
+    else:
+        if javascript_project.get("name") != config.javascript_package:
+            errors.append("JavaScript package name does not match project.yml.")
+        if javascript_project.get("version") != config.version:
+            errors.append("JavaScript package version does not match project.yml.")
+
+    python_module = (
+        root
+        / "packages"
+        / "python"
+        / "src"
+        / config.python_import_name
+        / "__init__.py"
+    )
+    if not python_module.is_file():
+        errors.append("Configured Python import package does not exist.")
 
 
 def _placeholder_paths(root: Path) -> list[Path]:

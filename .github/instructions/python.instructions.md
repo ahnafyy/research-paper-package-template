@@ -1,9 +1,10 @@
 ---
-description: "Deterministic Python rules for study code, claim evaluators, and generated evidence."
-applyTo: "{src,scripts,tests}/**/*.py"
+description: "Deterministic Python rules for study packages, claim evaluators, and generated evidence."
+applyTo: "{src,packages/python,scripts,tests}/**/*.py"
 ---
 
-- Keep reusable workflow machinery in `src/paperkit/` and study logic in `src/study/`.
+- Keep reusable workflow machinery in `src/paperkit/` and public study logic in
+	`packages/python/`.
 - Return structured results from analysis; do not scrape console output.
 - Use exact arithmetic when practical and document floating tolerances otherwise.
 - Seed every stochastic path from project metadata and report uncertainty for simulations.

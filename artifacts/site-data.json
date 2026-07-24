@@ -33,6 +33,15 @@
     "repository": "https://github.com/OWNER/REPOSITORY",
     "site": "https://OWNER.github.io/REPOSITORY/"
   },
+  "packages": {
+    "javascript": {
+      "name": "@example/example-study"
+    },
+    "python": {
+      "distribution": "example-study",
+      "import_name": "example_study"
+    }
+  },
   "project": {
     "abstract": "TODO: State the problem, method, result, and contribution.",
     "arxiv_categories": [
@@ -44,6 +53,9 @@
     "slug": "paper-project",
     "subtitle": "TODO: One-sentence contribution",
     "title": "TODO: Research title"
+  },
+  "release": {
+    "version": "0.1.0"
   },
   "results": {
     "choices": 4,
