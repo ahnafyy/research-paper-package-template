@@ -1,0 +1,135 @@
+---
+import ClaimLedger from "../components/ClaimLedger.astro";
+import OccupancyDemo from "../components/OccupancyDemo.astro";
+import ResultStrip from "../components/ResultStrip.astro";
+import ResearchLayout from "../layouts/ResearchLayout.astro";
+import data from "../generated/site-data.json";
+
+const { project, authors, links, licenses, results, claims, initialized } = data;
+const authorNames = authors.map((author) => author.name).join(", ");
+const expected = Number(results.expected_distinct);
+const displayedClaims = initialized ? claims.filter((claim) => claim.site_visible) : claims;
+const resultStrip = [
+  {
+    label: "Options",
+    value: String(results.options),
+    note: "equally likely states",
+    tone: "gold" as const,
+  },
+  {
+    label: "Independent choices",
+    value: String(results.choices),
+    note: "one action per draw",
+    tone: "coral" as const,
+  },
+  {
+    label: "Expected distinct",
+    value: expected.toFixed(6),
+    note: "exact finite calculation",
+    tone: "teal" as const,
+  },
+];
+---
+
+<ResearchLayout title={project.title} description={project.abstract}>
+  <header class="topbar">
+    <a class="wordmark" href="#top" aria-label={`${project.title}, back to top`}>{project.slug}</a>
+    <nav aria-label="Primary navigation">
+      <a href="#benchmark">Benchmark</a>
+      <a href="#claims">Claims</a>
+      <a href="#reproduce">Reproduce</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-labelledby="paper-title">
+      <div class="hero__content">
+        {!initialized && <p class="template-state">Template fixture · release disabled</p>}
+        <h1 id="paper-title">{project.title}</h1>
+        <p class="subtitle">{project.subtitle}</p>
+        <p class="byline">{authorNames}</p>
+        <p class="abstract">{project.abstract}</p>
+        <div class="hero__links">
+          <a class="command command--primary" href="#benchmark">Explore result</a>
+          <a class="command" href={links.repository}>Source and evidence</a>
+        </div>
+      </div>
+      <ResultStrip results={resultStrip} />
+    </section>
+
+    <section class="section section--rule" id="benchmark" aria-labelledby="benchmark-title">
+      <div class="section__heading">
+        <p class="section-number">01</p>
+        <div>
+          <span class="eyebrow">Minimal benchmark</span>
+          <h2 id="benchmark-title">Coverage is not the number of attempts</h2>
+        </div>
+      </div>
+      <div class="prose-grid">
+        <div class="prose">
+          <p>
+            The built-in fixture asks how many distinct options are covered when independent actions can collide.
+            It is deliberately modest: its purpose is to prove the evidence path before a real study replaces it.
+          </p>
+          <p class="formula" aria-label="Expected distinct options equals M times one minus one minus one over M to the N">
+            E[D] = M(1 - (1 - 1/M)<sup>N</sup>)
+          </p>
+          <p>
+            With <strong>{results.options}</strong> options and <strong>{results.choices}</strong> choices, the exact result is
+            <strong>{expected.toFixed(9)}</strong>. The value on this page is imported from the same checked artifact
+            used by the manuscript.
+          </p>
+        </div>
+        <OccupancyDemo options={Number(results.options)} choices={Number(results.choices)} expected={expected} />
+      </div>
+    </section>
+
+    <section class="section section--tint" id="claims" aria-labelledby="claims-title">
+      <div class="section__heading">
+        <p class="section-number">02</p>
+        <div>
+          <span class="eyebrow">Evidence boundary</span>
+          <h2 id="claims-title">Every statement carries its status</h2>
+        </div>
+      </div>
+      <p class="section-intro">
+        Claim type, executable outcome, scope, and limitations travel together. A finite scan remains a finite scan,
+        even when its pattern is compelling.
+      </p>
+      <ClaimLedger claims={displayedClaims} />
+    </section>
+
+    <section class="section section--ink" id="reproduce" aria-labelledby="reproduce-title">
+      <div class="section__heading">
+        <p class="section-number">03</p>
+        <div>
+          <span class="eyebrow">Reproduce</span>
+          <h2 id="reproduce-title">One evidence bundle, two public surfaces</h2>
+        </div>
+      </div>
+      <div class="reproduce-grid">
+        <pre><code>python -m pip install -e '.[dev]'
+paperkit build
+python -m pytest
+npm ci --prefix site
+npm run build --prefix site</code></pre>
+        <div>
+          <p>
+            The build evaluates registered claims and writes deterministic JSON, CSV, and TeX outputs. The paper and
+            this explainer consume those files without maintaining parallel scientific constants.
+          </p>
+          <dl class="artifact-list">
+            <div><dt>Code</dt><dd>{licenses.code}</dd></div>
+            <div><dt>Content</dt><dd>{licenses.content}</dd></div>
+            <div><dt>Seed</dt><dd>{results.random_seed}</dd></div>
+          </dl>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>{project.title}</p>
+    <p><a href={links.repository}>Repository</a> · <a href="#claims">Claim ledger</a></p>
+  </footer>
+</ResearchLayout>
